@@ -1,0 +1,156 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum SettingKey {
+  ENABLE_PROMOCODE
+  // Добавьте другие ключи настроек по мере необходимости
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  password String
+  phone    String @unique
+  roleId   Int
+
+  role     UserRole  @relation(fields: [roleId], references: [id]) // Связь с ролью
+  bookings Booking[]
+
+  UserRole UserRole[] @relation("User Roles")
+}
+
+model UserRole {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[] @relation("User Roles") // Связь с пользователями
+  menus Menu[] @relation("RoleMenus") // Связь с пунктами меню
+
+  User User[]
+}
+
+model Menu {
+  id    Int        @id @default(autoincrement())
+  name  String
+  path  String
+  roles UserRole[] @relation("RoleMenus") // Связь с ролями
+}
+
+model Movie {
+  id             Int        @id @default(autoincrement())
+  title          String
+  description    String
+  rating         Float
+  year           Int
+  ageRestriction String
+  imagePath      String
+  trailerLink    String
+  premiere       Boolean
+  genres         Genre[]    @relation("MovieGenres")
+  showtimes      ShowTime[]
+}
+
+model Genre {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  movies Movie[] @relation("MovieGenres")
+}
+
+enum TheaterType {
+  REGULAR
+  VIP
+}
+
+model Theater {
+  id          Int         @id @default(autoincrement())
+  name        String
+  type        TheaterType @default(REGULAR)
+  rows        Int?
+  seatsPerRow Int?
+  showTimes   ShowTime[]  @relation("TheaterShowTimes") // Связь с сеансами
+
+  ShowTime ShowTime[]
+}
+
+model ShowTime {
+  id             Int      @id @default(autoincrement())
+  movieId        Int
+  theaterId      Int // Добавляем поле для связи с залом
+  startTime      DateTime @default(now())
+  endTime        DateTime @default(now())
+  price          Float
+  date           DateTime
+  seatsAvailable Int
+
+  movie    Movie     @relation(fields: [movieId], references: [id])
+  theater  Theater   @relation(fields: [theaterId], references: [id]) // Связь с залом
+  bookings Booking[]
+
+  Theater Theater[] @relation("TheaterShowTimes")
+}
+
+model Booking {
+  id            Int     @id @default(autoincrement())
+  showTimeId    Int
+  userId        Int? // Делаем необязательным
+  phone         String // Добавляем номер телефона
+  reservedSeats Int
+  totalAmount   Float
+  confirmation  Boolean
+  row           Int[]
+  seatPerRow    Int[]
+  productId     Int?
+
+  showTime ShowTime @relation(fields: [showTimeId], references: [id])
+  user     User?    @relation(fields: [userId], references: [id]) // Делаем связь необязательной
+  product  Product?    @relation(fields: [productId], references: [id]) // Делаем связь необязательной
+
+  @@unique([userId, showTimeId]) // Оставляем уникальный составной ключ
+}
+
+enum PromoCodeType {
+  FIXED // фиксированная сумма
+  PERCENTAGE // процент
+  PRODUCT // продукт
+}
+
+model PromoCode {
+  id        Int           @id @default(autoincrement())
+  code      String        @unique
+  type      PromoCodeType
+  value     Float
+  startDate DateTime
+  endDate   DateTime
+  productId Int? // Опциональное поле для связи с продуктом
+  product   Product?      @relation(fields: [productId], references: [id])
+}
+
+model Product {
+  id             Int         @id @default(autoincrement())
+  name           String
+  price          Float
+  categoryId     Int
+  additionalInfo String?
+  imagePath      String
+  promoCodes     PromoCode[]
+
+  category ProductCategory @relation(fields: [categoryId], references: [id])
+
+  Booking Booking[]
+}
+
+model ProductCategory {
+  id       Int       @id @default(autoincrement())
+  name     String
+  products Product[]
+}
+
+model Settings {
+  id    Int        @id @default(autoincrement())
+  key   SettingKey @unique
+  value Boolean
+}
