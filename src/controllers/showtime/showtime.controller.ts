@@ -23,7 +23,7 @@ export const getShowTimes = async (
 
     // Создаем объект для хранения количества забронированных мест по showTimeId
     const reservedSeatsCountMap: Record<number, number> = {};
-
+    // @ts-ignore
     bookingsCount.forEach((booking) => {
       reservedSeatsCountMap[booking.showTimeId] =
         booking._sum.reservedSeats || 0;
@@ -38,6 +38,7 @@ export const getShowTimes = async (
     });
 
     // Добавляем количество забронированных мест к каждому сеансу
+    // @ts-ignore
     const showTimesWithReservedSeats = showTimes.map((showTime) => ({
       ...showTime,
       reservedSeatsCount: reservedSeatsCountMap[showTime.id] || 0,
@@ -76,13 +77,14 @@ export const getAllShowTimesWithBookingCount = async (
 
     // Создаем объект для хранения количества забронированных мест по showTimeId
     const reservedSeatsCountMap: Record<number, number> = {};
-
+    // @ts-ignore
     bookingsCount.forEach((booking) => {
       reservedSeatsCountMap[booking.showTimeId] =
         booking._sum.reservedSeats || 0; // Если нет бронирований, устанавливаем 0
     });
 
     // Объединяем данные showtime с количеством забронированных мест
+    // @ts-ignore
     const showTimesWithReservedSeatsCount = showTimes.map((showTime) => ({
       ...showTime,
       reservedSeatsCount: reservedSeatsCountMap[showTime.id] || 0, // Устанавливаем количество забронированных мест

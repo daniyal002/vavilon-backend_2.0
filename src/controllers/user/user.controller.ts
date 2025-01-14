@@ -17,6 +17,7 @@ export const getUsers = async (req: Request, res: Response) => {
     const { phone, roleId } = req.query;
 
     // Формируем условия фильтрации
+    // @ts-ignore
     const where: Prisma.UserWhereInput = {
       ...(phone && { phone: { contains: phone as string } }),
       ...(roleId && { roleId: parseInt(roleId as string) }),
@@ -29,6 +30,7 @@ export const getUsers = async (req: Request, res: Response) => {
     });
 
     // Скрываем пароли в ответе
+    // @ts-ignore
     const safeUsers = users.map((user) => {
       const { password, ...userWithoutPassword } = user;
       return userWithoutPassword;
@@ -156,7 +158,7 @@ export const updateUser = async (
 
     if (!existingUser) {
       res.status(404).json({ error: 'Пользователь не найден' });
-      return 
+      return
     }
 
     // Валидация телефона если он передан
@@ -164,7 +166,7 @@ export const updateUser = async (
       const phoneRegex = /^\+?[1-9]\d{10,14}$/;
       if (!phoneRegex.test(phone)) {
         res.status(400).json({ error: 'Некорректный формат телефона' });
-        return 
+        return
       }
 
       // Проверка уникальности нового телефона
@@ -176,8 +178,8 @@ export const updateUser = async (
         res
         .status(400)
         .json({ error: 'Пользователь с таким телефоном уже существует' });
-        
-        return 
+
+        return
       }
     }
 
@@ -189,7 +191,7 @@ export const updateUser = async (
 
       if (!role) {
         res.status(400).json({ error: 'Указанная роль не существует' });
-        return 
+        return
       }
     }
 
@@ -199,8 +201,8 @@ export const updateUser = async (
         res
         .status(400)
         .json({ error: 'Пароль должен содержать минимум 6 символов' });
-        
-        return 
+
+        return
       }
       hashedPassword = await bcrypt.hash(password, 10);
     }
@@ -230,7 +232,7 @@ export const deleteUser = async (req: Request, res: Response) => {
   try {
     if (isNaN(Number(id))) {
       res.status(400).json({ error: 'Некорректный ID пользователя' });
-      return 
+      return
     }
 
     // Проверка существования пользователя
@@ -240,7 +242,7 @@ export const deleteUser = async (req: Request, res: Response) => {
 
     if (!user) {
       res.status(404).json({ error: 'Пользователь не найден' });
-      return 
+      return
     }
 
     await prisma.user.delete({

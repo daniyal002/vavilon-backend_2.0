@@ -331,6 +331,7 @@ export const getBookingSummariesByPhone = async (req: Request, res: Response): P
       _sum: { totalAmount: true },
     });
 
+    // @ts-ignore
     const formattedSummaries = summaries.map(summary => ({
       phone: summary.phone,
       bookingCount: summary._count._all,

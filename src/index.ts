@@ -29,7 +29,7 @@ app.use(cors({
 
 
 // Логирование запросов в формате 'dev'
-app.use(morgan('dev')); 
+app.use(morgan('dev'));
 
 // Middleware для раздачи статических файлов
 app.use('/movieImage', express.static(path.join(__dirname, '../movieImage')));
@@ -51,7 +51,7 @@ app.use('/theaters',theaterRoutes)
 app.use('/settings', settingsRoutes);
 
 // Запуск сервера
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
