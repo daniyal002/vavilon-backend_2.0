@@ -80,8 +80,8 @@ model ShowTime {
   id             Int      @id @default(autoincrement())
   movieId        Int
   theaterId      Int // Добавляем поле для связи с залом
-  startTime      DateTime @default(now())
-  endTime        DateTime @default(now())
+  startTime      DateTime @default(now()) @db.Timestamp
+  endTime        DateTime @default(now()) @db.Timestamp
   price          Float
   date           DateTime
   seatsAvailable Int

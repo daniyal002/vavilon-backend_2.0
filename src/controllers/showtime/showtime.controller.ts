@@ -1,7 +1,8 @@
 // src/routes/showtime/showtime.controller.ts
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import { AuthRequest } from '../../auth.middleware';
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
+import { AuthRequest } from "../../auth.middleware";
+import moment from "moment-timezone";
 
 const prisma = new PrismaClient();
 
@@ -11,11 +12,13 @@ export const getShowTimes = async (
   res: Response
 ): Promise<void> => {
   try {
-    const setting = await prisma.settings.findUnique({where:{key:'ENABLE_PROMOCODE'}})
-    const ENABLE_PROMOCODE = setting?.value
+    const setting = await prisma.settings.findUnique({
+      where: { key: "ENABLE_PROMOCODE" },
+    });
+    const ENABLE_PROMOCODE = setting?.value;
     // Получаем количество забронированных мест для каждого showtime
     const bookingsCount = await prisma.booking.groupBy({
-      by: ['showTimeId'],
+      by: ["showTimeId"],
       _sum: {
         reservedSeats: true,
       },
@@ -46,9 +49,9 @@ export const getShowTimes = async (
         showTime.seatsAvailable - (reservedSeatsCountMap[showTime.id] || 0),
     }));
 
-    res.json({showTimes:[...showTimesWithReservedSeats],ENABLE_PROMOCODE});
+    res.json({ showTimes: [...showTimesWithReservedSeats], ENABLE_PROMOCODE });
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при получении сеансов' });
+    res.status(500).json({ error: "Ошибка при получении сеансов" });
   }
 };
 
@@ -63,13 +66,13 @@ export const getAllShowTimesWithBookingCount = async (
       include: {
         movie: true,
         theater: true,
-        bookings: {include:{product:true}},
+        bookings: { include: { product: true } },
       },
     });
 
     // Получаем количество забронированных мест для каждого showtime
     const bookingsCount = await prisma.booking.groupBy({
-      by: ['showTimeId'],
+      by: ["showTimeId"],
       _sum: {
         reservedSeats: true,
       },
@@ -92,7 +95,7 @@ export const getAllShowTimesWithBookingCount = async (
 
     res.json(showTimesWithReservedSeatsCount);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при получении данных showtime' });
+    res.status(500).json({ error: "Ошибка при получении данных showtime" });
   }
 };
 
@@ -101,7 +104,7 @@ export const getShowTimeById = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   if (isNaN(Number(id))) {
-    res.status(400).json({ error: 'Некорректный ID сеанса' });
+    res.status(400).json({ error: "Некорректный ID сеанса" });
   } else {
     try {
       const showTime = await prisma.showTime.findUnique({
@@ -113,12 +116,12 @@ export const getShowTimeById = async (req: Request, res: Response) => {
         },
       });
       if (!showTime) {
-        res.status(404).json({ error: 'Сеанс не найден' });
+        res.status(404).json({ error: "Сеанс не найден" });
       } else {
         res.json(showTime);
       }
     } catch (error) {
-      res.status(500).json({ error: 'Ошибка при получении сеанса' });
+      res.status(500).json({ error: "Ошибка при получении сеанса" });
     }
   }
 };
@@ -130,7 +133,7 @@ export const checkBooking = async (req: AuthRequest, res: Response) => {
   console.log(req.params);
   // Проверяем, что userId и showTimeId существуют
   if (!userId || !id) {
-    res.status(400).json({ error: 'Неверные параметры запроса' });
+    res.status(400).json({ error: "Неверные параметры запроса" });
   } else {
     try {
       // Проверяем наличие бронирования
@@ -151,7 +154,7 @@ export const checkBooking = async (req: AuthRequest, res: Response) => {
       }
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Ошибка при проверке бронирования' });
+      res.status(500).json({ error: "Ошибка при проверке бронирования" });
     }
   }
 };
@@ -168,12 +171,21 @@ export const createShowTime = async (req: Request, res: Response) => {
     theaterId,
   } = req.body;
   // Преобразуем дату и время в формат Date
-  const startDateTime = new Date(`${date}T${startTime}`); // Объединяем дату и время для начала
-  let endDateTime = new Date(`${date}T${endTime}`); // Объединяем дату и время для окончания
+  // Преобразуем дату и время в формат Date
+  const startDateTime = moment.tz(`${date} ${startTime}`, "YYYY-MM-DD HH:mm");
+  const endDateTime = moment.tz(`${date} ${endTime}`, "YYYY-MM-DD HH:mm");
 
+  // Если время начала больше времени окончания, добавляем день к времени окончания
   if (startDateTime > endDateTime) {
-    endDateTime = new Date(endDateTime.setDate(endDateTime.getDate() + 1));
+    endDateTime.add(1, "day");
   }
+
+  console.log(
+    "startTime:",
+    startDateTime.format(),
+    "endTime:",
+    endDateTime.format()
+  );
 
   try {
     const newShowTime = await prisma.showTime.create({
@@ -186,8 +198,8 @@ export const createShowTime = async (req: Request, res: Response) => {
             id: Number(theaterId),
           },
         },
-        startTime: startDateTime,
-        endTime: endDateTime,
+        startTime: startDateTime.format(), // Сохраняем в московском времени
+        endTime: endDateTime.format(), // Сохраняем в московском времени
         price: parseFloat(price),
         date: new Date(date),
         seatsAvailable: parseInt(seatsAvailable),
@@ -196,7 +208,7 @@ export const createShowTime = async (req: Request, res: Response) => {
     });
     res.status(201).json(newShowTime);
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка при создании сеанса' + error });
+    res.status(500).json({ error: "Ошибка при создании сеанса" + error });
   }
 };
 
@@ -213,15 +225,16 @@ export const updateShowTime = async (req: Request, res: Response) => {
     theaterId,
   } = req.body;
   // Преобразуем дату и время в формат Date
-  const startDateTime = new Date(`${date}T${startTime}`); // Объединяем дату и время для начала
-  let endDateTime = new Date(`${date}T${endTime}`); // Объединяем дату и время для окончания
+  const startDateTime = moment.tz(`${date} ${startTime}`, "YYYY-MM-DD HH:mm");
+  const endDateTime = moment.tz(`${date} ${endTime}`, "YYYY-MM-DD HH:mm");
 
+  // Если время начала больше времени окончания, добавляем день к времени окончания
   if (startDateTime > endDateTime) {
-    endDateTime = new Date(endDateTime.setDate(endDateTime.getDate() + 1));
+    endDateTime.add(1, "day");
   }
 
   if (isNaN(Number(id))) {
-    res.status(400).json({ error: 'Некорректный ID сеанса' });
+    res.status(400).json({ error: "Некорректный ID сеанса" });
   } else {
     try {
       const updatedShowTime = await prisma.showTime.update({
@@ -235,8 +248,8 @@ export const updateShowTime = async (req: Request, res: Response) => {
               id: Number(theaterId),
             },
           },
-          startTime: startDateTime,
-          endTime: endDateTime,
+          startTime: startDateTime.format(), // Сохраняем в московском времени
+          endTime: endDateTime.format(), // Сохраняем в московском времени
           price: parseFloat(price),
           date: new Date(date),
           seatsAvailable: parseInt(seatsAvailable),
@@ -245,18 +258,17 @@ export const updateShowTime = async (req: Request, res: Response) => {
       });
       res.json(updatedShowTime);
     } catch (error) {
-      res.status(500).json({ error: 'Ошибка при обновлении сеанса' });
+      res.status(500).json({ error: "Ошибка при обновлении сеанса" });
     }
   }
 };
-
 
 // Удалить сеанс
 export const deleteShowTime = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   if (isNaN(Number(id))) {
-    res.status(400).json({ error: 'Некорректный ID сеанса' });
+    res.status(400).json({ error: "Некорректный ID сеанса" });
   } else {
     try {
       await prisma.showTime.delete({
@@ -264,7 +276,7 @@ export const deleteShowTime = async (req: Request, res: Response) => {
       });
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: 'Ошибка при удалении сеанса' });
+      res.status(500).json({ error: "Ошибка при удалении сеанса" });
     }
   }
 };
