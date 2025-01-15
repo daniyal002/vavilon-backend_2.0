@@ -35,3 +35,6 @@ coverage
 
 # Игнорируем документацию
 docs
+
+productImage/
+movieImage/

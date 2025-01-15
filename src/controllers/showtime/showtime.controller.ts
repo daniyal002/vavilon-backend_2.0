@@ -169,7 +169,11 @@ export const createShowTime = async (req: Request, res: Response) => {
   } = req.body;
   // Преобразуем дату и время в формат Date
   const startDateTime = new Date(`${date}T${startTime}`); // Объединяем дату и время для начала
-  const endDateTime = new Date(`${date}T${endTime}`); // Объединяем дату и время для окончания
+  let endDateTime = new Date(`${date}T${endTime}`); // Объединяем дату и время для окончания
+
+  if (startDateTime > endDateTime) {
+    endDateTime = new Date(endDateTime.setDate(endDateTime.getDate() + 1));
+  }
 
   try {
     const newShowTime = await prisma.showTime.create({
@@ -210,7 +214,11 @@ export const updateShowTime = async (req: Request, res: Response) => {
   } = req.body;
   // Преобразуем дату и время в формат Date
   const startDateTime = new Date(`${date}T${startTime}`); // Объединяем дату и время для начала
-  const endDateTime = new Date(`${date}T${endTime}`); // Объединяем дату и время для окончания
+  let endDateTime = new Date(`${date}T${endTime}`); // Объединяем дату и время для окончания
+
+  if (startDateTime > endDateTime) {
+    endDateTime = new Date(endDateTime.setDate(endDateTime.getDate() + 1));
+  }
 
   if (isNaN(Number(id))) {
     res.status(400).json({ error: 'Некорректный ID сеанса' });
@@ -241,6 +249,7 @@ export const updateShowTime = async (req: Request, res: Response) => {
     }
   }
 };
+
 
 // Удалить сеанс
 export const deleteShowTime = async (req: Request, res: Response) => {
