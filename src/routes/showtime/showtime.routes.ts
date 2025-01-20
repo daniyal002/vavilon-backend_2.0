@@ -1,6 +1,6 @@
 // src/routes/showtime/showtime.routes.ts
 import { Router } from 'express';
-import { getShowTimes, getShowTimeById, createShowTime, updateShowTime, deleteShowTime, checkBooking, getAllShowTimesWithBookingCount } from '../../controllers/showtime/showtime.controller';
+import { getShowTimes, getShowTimeById, createShowTime, updateShowTime, deleteShowTime, checkBooking, getAllShowTimesWithBookingCount, getAllShowTimes } from '../../controllers/showtime/showtime.controller';
 import { authenticateToken, authorizeAdmin } from '../../auth.middleware';
 
 const router = Router();
@@ -8,7 +8,9 @@ const router = Router();
 // Получить все сеансы
 router.get('/', getShowTimes);
 
-router.get('/allShowTimesWithBookingCount',authenticateToken,authorizeAdmin, getAllShowTimesWithBookingCount);
+router.get('/getAllShowTimes', authenticateToken, authorizeAdmin,getAllShowTimes);
+
+router.get('/allShowTimesWithBookingCount', authenticateToken, authorizeAdmin, getAllShowTimesWithBookingCount);
 
 // Получить сеанс по ID
 router.get('/:id', authenticateToken, authorizeAdmin, getShowTimeById);

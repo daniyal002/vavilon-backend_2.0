@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
+import fs from 'fs'
 
 const prisma = new PrismaClient();
 
@@ -96,10 +97,10 @@ export const createMovie = async (req: Request, res: Response) => {
 
   try {
     // Преобразуем genreIds в массив, если это строка
-    const genreIdsArray = Array.isArray(genreIds) 
-      ? genreIds 
-      : typeof genreIds === 'string' 
-        ? [genreIds] 
+    const genreIdsArray = Array.isArray(genreIds)
+      ? genreIds
+      : typeof genreIds === 'string'
+        ? [genreIds]
         : [];
 
     const newMovie = await prisma.movie.create({
@@ -111,7 +112,7 @@ export const createMovie = async (req: Request, res: Response) => {
         ageRestriction,
         imagePath,
         trailerLink,
-        premiere: Boolean(premiere),
+        premiere: premiere === 'true' ? true : false,
         genres: {
           connect: genreIdsArray.map((id: string) => ({ id: parseInt(id) })),
         },
@@ -146,6 +147,24 @@ export const updateMovie = async (req: Request, res: Response) => {
     res.status(400).json({ error: 'Некорректный ID фильма' });
   } else {
     try {
+      const currentMovie = await prisma.movie.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (currentMovie && currentMovie.imagePath && imagePath) {
+        const oldImagePath = currentMovie.imagePath;
+        fs.unlink(oldImagePath, (err) => {
+          if (err) {
+            console.error('Error deleting old image:', err);
+          }
+        });
+      }
+
+      const genreIdsArray = Array.isArray(genreIds)
+        ? genreIds
+        : typeof genreIds === 'string'
+          ? [genreIds]
+          : [];
       const updatedMovie = await prisma.movie.update({
         where: { id: Number(id) },
         data: {
@@ -159,14 +178,14 @@ export const updateMovie = async (req: Request, res: Response) => {
           premiere: premiere === 'true' ? true : false,
           genres: {
             set: [], // Сначала очищаем все жанры
-            connect: genreIds.map((id: string) => ({ id: parseInt(id) })), // Затем подключаем новые
+            connect: genreIdsArray.map((id: string) => ({ id: parseInt(id) })), // Затем подключаем новые
           },
         },
         include: { genres: true },
       });
       res.json(updatedMovie);
     } catch (error) {
-      res.status(500).json({ error: 'Ошибка при обновлении фильма' });
+      res.status(500).json({ error: 'Ошибка при обновлении фильма' + error});
     }
   }
 };
@@ -179,6 +198,19 @@ export const deleteMovie = async (req: Request, res: Response) => {
     res.status(400).json({ error: 'Некорректный ID фильма ' });
   } else {
     try {
+      const movie = await prisma.movie.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (movie && movie.imagePath) {
+        const imagePath = movie.imagePath;
+        fs.unlink(imagePath, (err) => {
+          if (err) {
+            console.error('Error deleting image:', err);
+          }
+        });
+      }
+
       await prisma.movie.delete({
         where: { id: Number(id) },
       });

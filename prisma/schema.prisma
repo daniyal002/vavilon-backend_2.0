@@ -154,3 +154,10 @@ model Settings {
   key   SettingKey @unique
   value Boolean
 }
+
+model Subscription {
+  id         Int      @id @default(autoincrement()) // Уникальный идентификатор
+  subscription String     // Данные подписки в формате JSON
+  endpoint     String   @unique // Уникальный идентификатор подписки
+  createdAt  DateTime @default(now())              // Время создания записи
+}

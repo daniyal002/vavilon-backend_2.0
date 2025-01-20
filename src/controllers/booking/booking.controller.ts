@@ -1,6 +1,8 @@
 // src/routes/booking/booking.controller.ts
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { notifyNewBooking } from '../../index';
+// import { notifyNewBookingWs } from '../../ws/notify';
 
 const prisma = new PrismaClient();
 
@@ -84,6 +86,8 @@ export const createBooking = async (
           productId
         },
       });
+      notifyNewBooking(updatedBooking);
+      // notifyNewBookingWs(updatedBooking)
       res.json(updatedBooking);
       return;
     }
@@ -100,7 +104,8 @@ export const createBooking = async (
         productId
       },
     });
-
+    notifyNewBooking(newBooking); // Отправка уведомления
+    // notifyNewBookingWs(newBooking)
     res.status(201).json(newBooking);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка при создании бронирования' });

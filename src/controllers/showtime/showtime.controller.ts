@@ -32,6 +32,62 @@ export const getShowTimes = async (
         booking._sum.reservedSeats || 0;
     });
 
+    const currentDate = new Date();
+    currentDate.setHours(currentDate.getHours() + 3);
+    const showTimes = await prisma.showTime.findMany({
+      where: {
+        endTime: {
+          gt: currentDate.toISOString(), // Filter for showtimes that have ended
+        },
+      },
+      include: {
+        movie: { include: { genres: true } },
+        theater: true,
+        bookings: true,
+      },
+    });
+
+    // Добавляем количество забронированных мест к каждому сеансу
+    // @ts-ignore
+    const showTimesWithReservedSeats = showTimes.map((showTime) => ({
+      ...showTime,
+      reservedSeatsCount: reservedSeatsCountMap[showTime.id] || 0,
+      availableSeats:
+        showTime.seatsAvailable - (reservedSeatsCountMap[showTime.id] || 0),
+    }));
+
+    res.json({ showTimes: [...showTimesWithReservedSeats], ENABLE_PROMOCODE });
+  } catch (error) {
+    res.status(500).json({ error: "Ошибка при получении сеансов" });
+  }
+};
+
+export const getAllShowTimes = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const setting = await prisma.settings.findUnique({
+      where: { key: "ENABLE_PROMOCODE" },
+    });
+    const ENABLE_PROMOCODE = setting?.value;
+    // Получаем количество забронированных мест для каждого showtime
+    const bookingsCount = await prisma.booking.groupBy({
+      by: ["showTimeId"],
+      _sum: {
+        reservedSeats: true,
+      },
+    });
+
+    // Создаем объект для хранения количества забронированных мест по showTimeId
+    const reservedSeatsCountMap: Record<number, number> = {};
+    // @ts-ignore
+    bookingsCount.forEach((booking) => {
+      reservedSeatsCountMap[booking.showTimeId] =
+        booking._sum.reservedSeats || 0;
+    });
+
+
     const showTimes = await prisma.showTime.findMany({
       include: {
         movie: { include: { genres: true } },
@@ -179,13 +235,6 @@ export const createShowTime = async (req: Request, res: Response) => {
   if (startDateTime > endDateTime) {
     endDateTime.add(1, "day");
   }
-
-  console.log(
-    "startTime:",
-    startDateTime.format(),
-    "endTime:",
-    endDateTime.format()
-  );
 
   try {
     const newShowTime = await prisma.showTime.create({
