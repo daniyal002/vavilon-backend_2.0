@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { notifyNewBooking } from '../../index';
+import { notifyDeleteBookingWs, notifyNewBookingWs } from '../../ws/notify';
 // import { notifyNewBookingWs } from '../../ws/notify';
 
 const prisma = new PrismaClient();
@@ -87,7 +88,7 @@ export const createBooking = async (
         },
       });
       notifyNewBooking(updatedBooking);
-      // notifyNewBookingWs(updatedBooking)
+      notifyNewBookingWs(updatedBooking)
       res.json(updatedBooking);
       return;
     }
@@ -105,7 +106,7 @@ export const createBooking = async (
       },
     });
     notifyNewBooking(newBooking); // Отправка уведомления
-    // notifyNewBookingWs(newBooking)
+    notifyNewBookingWs(newBooking)
     res.status(201).json(newBooking);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка при создании бронирования' });
@@ -197,7 +198,7 @@ export const deleteBooking = async (
     await prisma.booking.delete({
       where: { id: booking.id },
     });
-
+    notifyDeleteBookingWs(booking)
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: 'Ошибка при удалении бронирования' });
@@ -319,7 +320,6 @@ export const deleteBookingById = async (
     await prisma.booking.delete({
       where: { id: Number(id) },
     });
-
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: 'Ошибка при удалении бронирования' });
