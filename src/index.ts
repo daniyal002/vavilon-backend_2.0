@@ -17,9 +17,7 @@ import theaterRoutes from "./routes/theater/theater.routes";
 import settingsRoutes from "./routes/settings/settings.routes";
 import subscriptionRoutes from "./routes/subscription/subscription.routes";
 import path from "path";
-import http from "http";
 import webpush from "web-push";
-import moment from "moment";
 
 const app = express();
 const prisma = new PrismaClient();
@@ -65,47 +63,7 @@ webpush.setVapidDetails(
   "tRnRtWchP_8DMGYCixRZFjP2IGgZO_J9BRQumw0D2oM"
 );
 
-export const notifyNewBooking = async (booking: Booking): Promise<void> => {
-  const subscriptions = await prisma.subscription.findMany();
-  const showTime = await prisma.showTime.findUnique({
-    where: { id: booking?.showTimeId },
-  });
-  const movie = await prisma.movie.findUnique({
-    where: { id: showTime?.movieId },
-  });
-  const timeAndDate = showTime?.startTime
-  const readableDate = timeAndDate?.toLocaleString('ru-RU', {
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    timeZone:"UTC"
-  })
-  const notificationPayload = JSON.stringify({
-    title: "Новая бронь!",
-    body: `Новая бронь на ${movie?.title} по дате и времени ${readableDate} по телефону ${booking.phone} на ${booking.totalAmount}₽.`,
-  });
 
-  subscriptions.forEach(async (subscription) => {
-    try {
-      console.log(
-        "Отправка уведомления для подписки:",
-        subscription.subscription
-      );
-
-      await webpush.sendNotification(
-        JSON.parse(subscription.subscription), // Преобразование строки JSON в объект
-        notificationPayload
-      );
-
-      console.log("Уведомление успешно отправлено");
-    } catch (error) {
-      console.error("Ошибка отправки уведомления:", error);
-    }
-  });
-};
 
 // Запуск сервера
 const PORT = process.env.PORT || 3002;

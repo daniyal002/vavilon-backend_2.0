@@ -1,7 +1,7 @@
 // src/routes/booking/booking.controller.ts
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { notifyNewBooking } from '../../index';
+import { notifyDeleteBooking, notifyNewBooking } from '../../push/pushNotification';
 import { notifyDeleteBookingWs, notifyNewBookingWs } from '../../ws/notify';
 // import { notifyNewBookingWs } from '../../ws/notify';
 
@@ -199,6 +199,7 @@ export const deleteBooking = async (
       where: { id: booking.id },
     });
     notifyDeleteBookingWs(booking)
+    notifyDeleteBooking(booking)
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: 'Ошибка при удалении бронирования' });
